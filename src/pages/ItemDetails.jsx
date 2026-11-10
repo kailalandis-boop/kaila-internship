@@ -1,5 +1,5 @@
 import EthImage from "../images/ethereum.svg";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import AuthorImage from "../images/author_thumbnail.jpg";
 import nftImage from "../images/nftImage.jpg";
 import { useEffect, useState } from "react";
@@ -8,99 +8,186 @@ import Skeleton from "../components/UI/Skeleton";
 
 const ItemDetails = () => {
   const location = useLocation();
-  const item = location.state?.item;
-
+  const selectedItem = location.state?.item;
+  const { nftId } = useParams();
+  const [itemDetails, setItemDetails] = useState(null);
   const [authorInfo, setAuthorInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  
+  // Use API details when available, otherwise use the clicked item.
+  const item = itemDetails || selectedItem;
+
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
 
-    async function fetchAuthor() {
+    let timer;
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const fetchItemDetails = async () => {
       try {
         setLoading(true);
+        setError("");
 
+        // Fetch the NFT details.
         const response = await axios.get(
-          "https://us-central1-nft-cloud-functions.cloudfunctions.net/topSellers"
+          "https://us-central1-nft-cloud-functions.cloudfunctions.net/itemDetails",
+          {
+            params: {
+              nftId: nftId,
+            },
+            signal: controller.signal,
+          }
         );
 
-        const author = response.data.find(
-          (seller) => seller.authorId === item?.authorId
-        );
+        console.log("Item Details API:", response.data);
 
-        setAuthorInfo(author || null);
+        const fetchedItem = Array.isArray(response.data)
+          ? response.data[0]
+          : response.data.item || response.data;
+
+        if (!fetchedItem) {
+          throw new Error("No NFT details returned.");
+        }
+
+        if (!isMounted) return;
+
+        setItemDetails(fetchedItem);
+
+        // Fetch the owner using ownerId.
+        const ownerId = fetchedItem.ownerId;
+
+        if (ownerId) {
+          try {
+            const authorResponse = await axios.get(
+              "https://us-central1-nft-cloud-functions.cloudfunctions.net/topSellers",
+              {
+                signal: controller.signal,
+              }
+            );
+
+            const author = authorResponse.data.find(
+              (seller) => seller.authorId === ownerId
+            );
+
+            if (isMounted) {
+              setAuthorInfo(
+                author || {
+                  authorId: fetchedItem.ownerId,
+                  authorName: fetchedItem.ownerName,
+                  authorImage: fetchedItem.ownerImage,
+                }
+              );
+            }
+          } catch (error) {
+            if (!controller.signal.aborted) {
+              console.log("Error fetching owner:", error);
+
+              if (isMounted) {
+                setAuthorInfo({
+                  authorId: fetchedItem.ownerId,
+                  authorName: fetchedItem.ownerName,
+                  authorImage: fetchedItem.ownerImage,
+                });
+              }
+            }
+          }
+        }
       } catch (error) {
-        console.log("Error fetching author:", error);
+        if (isMounted && !controller.signal.aborted) {
+          console.log("Error fetching item details:", error);
+          setError("Unable to load item details.");
+        }
       } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 1500);
+        if (isMounted) {
+          timer = setTimeout(() => {
+            setLoading(false);
+          }, 1500);
+        }
       }
+    };
+
+    if (nftId) {
+      fetchItemDetails();
+    } else {
+      setError("NFT ID is missing.");
+      setLoading(false);
     }
 
-    if (item?.authorId) {
-      fetchAuthor();
-    } else {
-      setTimeout(() => {
-        setLoading(false);
-      }, 1500);
-    }
-  }, [item?.authorId]);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [nftId]);
+
+  if (error) {
+    return <p>{error}</p>;
+  }
 
   return (
-    <div id="wrapper">
+    <div id="wrapper" className="item-details-page">
       <div className="no-bottom no-top" id="content">
         <div id="top"></div>
 
-        <section aria-label="section" className="mt90 sm-mt-0">
+        <section
+          id="section-hero"
+          aria-label="section"
+          className="no-top no-bottom"
+        >
           <div className="container">
-            <div className="row">
-
-              {/* NFT IMAGE */}
-              <div className="col-md-6 text-center">
+            <div className="row align-items-center">
+              <div className="col-lg-6">
                 {loading ? (
                   <Skeleton
                     width="100%"
-                    height="400px"
-                    borderRadius="12px"
+                    height="500px"
+                    borderRadius="10px"
                   />
                 ) : (
                   <img
-                    src={item.nftImage || nftImage}
-                    className="img-fluid img-rounded mb-sm-30 nft-image"
-                    alt={item.title || "NFT artwork"}
+                    src={item?.nftImage || nftImage}
+                    className="img-fluid"
+                    alt={item?.title || "NFT"}
                   />
                 )}
               </div>
 
-              {/* NFT INFORMATION */}
-              <div className="col-md-6">
+              <div className="col-lg-6">
                 <div className="item_info">
+                  <h2>
+                    {loading ? (
+                      <Skeleton
+                        width="70%"
+                        height="35px"
+                        borderRadius="5px"
+                      />
+                    ) : (
+                      item?.title
+                    )}
+                  </h2>
 
-                  {/* TITLE */}
-                  {loading ? (
-                    <Skeleton
-                      width="75%"
-                      height="32px"
-                      borderRadius="5px"
-                    />
-                  ) : (
-                    <h2>{item.title || "Untitled NFT"}</h2>
-                  )}
-
-                  {/* VIEWS AND LIKES */}
                   <div className="item_info_counts">
+                    <div className="item_info_type">
+                      <i className="fa fa-image"></i>
+                      NFT
+                    </div>
+
                     <div className="item_info_views">
                       <i className="fa fa-eye"></i>
                       {loading ? (
                         <Skeleton
-                          width="30px"
-                          height="15px"
-                          borderRadius="4px"
+                          width="35px"
+                          height="18px"
+                          borderRadius="5px"
                         />
                       ) : (
-                        "100"
+                        item?.views ?? 0
                       )}
                     </div>
 
@@ -108,178 +195,157 @@ const ItemDetails = () => {
                       <i className="fa fa-heart"></i>
                       {loading ? (
                         <Skeleton
-                          width="30px"
-                          height="15px"
-                          borderRadius="4px"
+                          width="35px"
+                          height="18px"
+                          borderRadius="5px"
                         />
                       ) : (
-                      item.likes !== undefined && item.likes !== null
-                        ? item.likes
-                        : 0
-                    )}
+                        item?.likes ?? 0
+                      )}
                     </div>
                   </div>
-
-                  {/* DESCRIPTION */}
                   {loading ? (
-                    <div className="d-flex flex-column" style={{ gap: "10px" }}>
-                      <Skeleton width="100%" height="14px" />
-                      <Skeleton width="95%" height="14px" />
-                      <Skeleton width="90%" height="14px" />
-                      <Skeleton width="85%" height="14px" />
+                    <div>
+                      <Skeleton
+                        width="100%"
+                        height="60px"
+                        borderRadius="5px"
+                      />
                     </div>
                   ) : (
-                    <p>
-                      {item.description || "Explore this unique NFT artwork."}
-                    </p>
+                    <p>{item?.description}</p>
                   )}
-
-                  {/* OWNER */}
                   <div className="d-flex flex-row">
                     <div className="mr40">
+                      <h6>Creator</h6>
+                      {loading ? (
+                        <Skeleton
+                          width="150px"
+                          height="50px"
+                          borderRadius="5px"
+                        />
+                      ) : (
+                        <Link
+                          to={`/author/${item?.creatorId}`}
+                          state={{
+                            author: {
+                              authorId: item?.creatorId,
+                              authorName: item?.creatorName,
+                              authorImage: item?.creatorImage,
+                            },
+                          }}
+                          className="author_list_pp"
+                        >
+                          <img
+                            className="lazy"
+                            src={item?.creatorImage || AuthorImage}
+                            alt={item?.creatorName || "Creator"}
+                          />
+                          <i className="fa fa-check"></i>
+                        </Link>
+                      )}
+
+                      {!loading && (
+                        <div className="author_list_info">
+                          <Link
+                            to={`/author/${item?.creatorId}`}
+                            state={{
+                              author: {
+                                authorId: item?.creatorId,
+                                authorName: item?.creatorName,
+                                authorImage: item?.creatorImage,
+                              },
+                            }}
+                          >
+                            {item?.creatorName || "Unknown creator"}
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h6>Owner</h6>
 
                       {loading ? (
                         <Skeleton
-                          width="65px"
-                          height="18px"
-                          borderRadius="4px"
+                          width="150px"
+                          height="50px"
+                          borderRadius="5px"
                         />
                       ) : (
-                        <h6>Owner</h6>
-                      )}
-
-                      <div className="item_author">
-                        <div className="author_list_pp">
-                          {loading ? (
-                            <Skeleton
-                              width="50px"
-                              height="50px"
-                              borderRadius="50%"
+                        <>
+                          <Link
+                            to={`/author/${authorInfo?.authorId || item?.ownerId}`}
+                            state={{ author: authorInfo }}
+                            className="author_list_pp"
+                          >
+                            <img
+                              className="lazy"
+                              src={
+                                authorInfo?.authorImage ||
+                                item?.ownerImage ||
+                                AuthorImage
+                              }
+                              alt={
+                                authorInfo?.authorName ||
+                                item?.ownerName ||
+                                "Owner"
+                              }
                             />
-                          ) : (
-                            <Link to="/author" 
-                              state={{ author: authorInfo }}>
-                              <img
-                                className="lazy"
-                                src={authorInfo?.authorImage || item.authorImage || AuthorImage}
-                                alt="NFT Owner"
-                              />
-                              <i className="fa fa-check"></i>
-                            </Link>
-                          )}
-                        </div>
+                            <i className="fa fa-check"></i>
+                          </Link>
 
-                        <div className="author_list_info">
-                          {loading ? (
-                            <Skeleton
-                              width="110px"
-                              height="16px"
-                              borderRadius="4px"
-                            />
-                          ) : (
-                            <Link to="/author"
+                          <div className="author_list_info">
+                            <Link
+                              to={`/author/${authorInfo?.authorId || item?.ownerId}`}
                               state={{ author: authorInfo }}
                             >
-                              {authorInfo?.authorName || "Unknown author"}
+                              {authorInfo?.authorName ||
+                                item?.ownerName ||
+                                "Unknown owner"}
                             </Link>
-                          )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="spacer-40"></div>
+
+                  <div className="de_tab">
+                    <div className="de_tab_content">
+                      <div className="tab-1">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <h6>Price</h6>
+
+                            {loading ? (
+                              <Skeleton
+                                width="100px"
+                                height="30px"
+                                borderRadius="5px"
+                              />
+                            ) : (
+                              <div className="nft-item-price">
+                                <img
+                                  src={EthImage}
+                                  alt="Ethereum"
+                                />
+                                <span>{item?.price ?? 0} ETH</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* CREATOR */}
-                  <div className="de_tab tab_simple">
-                    <div className="de_tab_content">
+                  <div className="spacer-20"></div>
 
-                      {loading ? (
-                        <Skeleton
-                          width="65px"
-                          height="18px"
-                          borderRadius="4px"
-                        />
-                      ) : (
-                        <h6>Creator</h6>
-                      )}
-
-                      <div className="item_author">
-                        <div className="author_list_pp">
-                          {loading ? (
-                            <Skeleton
-                              width="50px"
-                              height="50px"
-                              borderRadius="50%"
-                            />
-                          ) : (
-                            <Link to="/author" 
-                              state={{ author: authorInfo }}>
-                              <img
-                                className="lazy"
-                                src={authorInfo?.authorImage || item.authorImage || AuthorImage}
-                                alt="NFT creator"
-                              />
-                              <i className="fa fa-check"></i>
-                            </Link>
-                          )}
-                        </div>
-
-                        <div className="author_list_info">
-                          {loading ? (
-                            <Skeleton
-                              width="110px"
-                              height="16px"
-                              borderRadius="4px"
-                            />
-                          ) : (
-                            <Link to="/author"
-                              state={{ author: authorInfo }}
-                            >
-                              {authorInfo?.authorName || "Unknown author"}
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="spacer-40"></div>
-
-                    {/* PRICE */}
-                    {loading ? (
-                      <Skeleton
-                        width="65px"
-                        height="18px"
-                        borderRadius="4px"
-                      />
-                    ) : (
-                      <h6>Price</h6>
-                    )}
-
-                    <div className="nft-item-price">
-                      {loading ? (
-                        <>
-                          <Skeleton
-                            width="25px"
-                            height="25px"
-                            borderRadius="50%"
-                          />
-                          <Skeleton
-                            width="100px"
-                            height="20px"
-                            borderRadius="4px"
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <img src={EthImage} alt="Ethereum" />
-                          <span>
-                            {item.price != null
-                              ? `${item.price} ETH`
-                              : "Price unavailable"}
-                          </span>
-                        </>
-                      )}
-                    </div>
-
+                  <div className="de_tab">
+                    <button className="btn-main">
+                      Buy Now
+                    </button>
                   </div>
                 </div>
               </div>
