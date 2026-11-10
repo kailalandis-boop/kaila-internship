@@ -18,47 +18,31 @@ const NewItems = () => {
 
   // Fetch NFT items from API
   useEffect(() => {
-    let timer;
-    let isMounted = true;
+  const fetchItems = async () => {
+    try {
+      const response = await axios.get(
+        "https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems"
+      );
 
-    const controller = new AbortController();
+      console.log("NFT API data:", response.data);
 
-    const fetchItems = async () => {
-      try {
-        const response = await axios.get(
-          "https://us-central1-nft-cloud-functions.cloudfunctions.net/newItems",
-          {
-            signal: controller.signal,
-          }
-        );
+      setItems(Array.isArray(response.data) ? response.data : []);
 
-        if (isMounted) {
-          console.log("NFT API data:", response.data);
-          setItems(Array.isArray(response.data) ? response.data : []);
-        }
-      } catch (error) {
-        if (isMounted && !axios.isCancel(error)) {
-          console.error("API Error:", error);
-          console.error("Error Response:", error.response);
-          setError("Unable to load new items.");
-        }
-      } finally {
-        if (isMounted) {
-          timer = setTimeout(() => {
-            setLoading(false);
-          }, 1500);
-        }
-      }
-    };
+    } catch (error) {
+      console.error("API Error:", error);
+      console.error("Error Response:", error.response);
+      setError("Unable to load new items.");
 
-    fetchItems();
+    } finally {
+      // Keep skeleton visible for at least 1 second
+      setTimeout(() => {
+        setLoading(false);
+      }, 1500);
+    }
+  };
 
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, []);
+  fetchItems();
+}, []);
 
   // Owl Carousel settings
   const carouselOptions = {
@@ -83,34 +67,24 @@ const NewItems = () => {
     },
   };
 
-  if (error) {
-    return <p>{error}</p>;
-  }
-
-  return (
-    <section id="section-items" className="no-bottom">
-      <div className="container">
-
-        {/* Section Heading */}
-        <div className="row">
-          <div className="col-lg-12">
-            <div className="text-center">
-              <h2>New Items</h2>
-              <div className="small-border bg-color-2"></div>
-            </div>
+  if (loading) {
+    return (
+      <section id="section-items" className="no-bottom">
+        <div className="container">
+          <div className="text-center">
+            <h2>New Items</h2>
+            <div className="small-border bg-color-2"></div>
           </div>
-        </div>
 
-        {/* NFT Carousel */}
-       <OwlCarousel
-          className="owl-theme"
-          {...carouselOptions}
-          key={loading ? "loading" : "loaded"}
-        >
-          {loading
-            ? Array.from({ length: 4 }).map((_, index) => (
-                <div className="item" key={index}>
+          <div className="row">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                className="col-lg-3 col-md-6 col-sm-6"
+                key={index}
+              >
+                <div className="item">
                   <div className="nft__item skeleton-card">
+
                     <Skeleton
                       width="100%"
                       height="200px"
@@ -134,10 +108,41 @@ const NewItems = () => {
                       height="15px"
                       borderRadius="5px"
                     />
+
                   </div>
                 </div>
-              ))
-            : items.map((item, index) => (
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return <p>{error}</p>;
+  }
+
+  return (
+    <section id="section-items" className="no-bottom">
+      <div className="container">
+
+        {/* Section Heading */}
+        <div className="row">
+          <div className="col-lg-12">
+            <div className="text-center">
+              <h2>New Items</h2>
+              <div className="small-border bg-color-2"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* NFT Carousel */}
+        <OwlCarousel
+          className="owl-theme"
+          {...carouselOptions}
+        >
+          {items.map((item, index) => (
             <div className="item" key={item.id || index}>
               <div className="nft__item">
 
@@ -221,6 +226,7 @@ const NewItems = () => {
             </div>
           ))}
         </OwlCarousel>
+
       </div>
     </section>
   );
