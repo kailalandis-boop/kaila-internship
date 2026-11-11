@@ -4,6 +4,8 @@ import axios from "axios"; import AuthorImage from "../../images/author_thumbnai
 import nftImage from "../../images/nftImage.jpg";
 import Skeleton from "../UI/Skeleton";
 import Countdown from "../UI/Countdown";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 const ExploreItems = () => { 
   const [items, setItems] = useState([]); 
@@ -29,6 +31,16 @@ const ExploreItems = () => {
 
     return 0;
   });
+
+  useEffect(() => {
+    AOS.init({
+      offset: 150,
+      duration: 800,
+      easing: "ease-in-sine",
+      once: true,
+      mirror: false,
+    });
+  }, []);
   
   useEffect(() => {
     const fetchItems = async () => {
@@ -60,7 +72,7 @@ const ExploreItems = () => {
   
   return ( 
     <> 
-      <div> 
+      <div data-aos="fade-in"> 
         <select 
           id="filter-items" 
           value={filter} 
@@ -133,14 +145,16 @@ const ExploreItems = () => {
           <p>{error}</p>
         ) : (
           sortedItems.slice(0, visibleItems).map((item, index) => (
-            <div 
-              key={item.id || index} 
-              className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12" 
-              style={{ 
-                display: "block", 
-                backgroundSize: "cover", 
-              }} 
-            > 
+            <div
+              key={item.id || index}
+              className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12"
+              data-aos="fade-in"
+              data-aos-delay={(index % 4) * 100}
+              style={{
+                display: "block",
+                backgroundSize: "cover",
+              }}
+            >
               <div className="nft__item"> 
                 <div className="author_list_pp"> 
                   <Link
@@ -219,7 +233,7 @@ const ExploreItems = () => {
         )} 
       </div> 
       {!loading && !error && visibleItems < sortedItems.length && (
-        <div className="col-md-12 text-center">
+        <div className="col-md-12 text-center" data-aos="fade-in">
           <button
             id="loadmore"
             className="btn-main lead"
