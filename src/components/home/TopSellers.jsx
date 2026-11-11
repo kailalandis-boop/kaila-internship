@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -9,29 +10,48 @@ const TopSellers = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let timer;
+    let isMounted = true;
+
+    const controller = new AbortController();
+
     const fetchSellers = async () => {
       try {
         const response = await axios.get(
-          "https://us-central1-nft-cloud-functions.cloudfunctions.net/topSellers"
+          "https://us-central1-nft-cloud-functions.cloudfunctions.net/topSellers",
+          {
+            signal: controller.signal,
+          }
         );
 
-        console.log("Top Sellers API data:", response.data);
+        if (isMounted) {
+          console.log("Top Sellers API data:", response.data);
 
-        setSellers(
-          Array.isArray(response.data) ? response.data : []
-        );
+          setSellers(
+            Array.isArray(response.data) ? response.data : []
+          );
+        }
       } catch (error) {
-        console.error("Error fetching top sellers:", error);
-        setError("Unable to load top sellers.");
+        if (isMounted && !axios.isCancel(error)) {
+          console.error("Error fetching top sellers:", error);
+          setError("Unable to load top sellers.");
+        }
       } finally {
-        // Keep skeleton visible for at least 1 second
-        setTimeout(() => {
-          setLoading(false);
-        }, 1500);
+        if (isMounted) {
+          timer = setTimeout(() => {
+            setLoading(false);
+          }, 1500);
+        }
       }
     };
 
     fetchSellers();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, []);
 
   return (
@@ -80,7 +100,10 @@ const TopSellers = () => {
                   sellers.map((seller) => (
                     <li key={seller.id}>
                       <div className="author_list_pp">
-                        <Link to="/author" state={{ author: seller }}>
+                        <Link
+                          to={`/author/${seller.authorId}`}
+                          state={{ author: seller }}
+                        >
                           <img
                             className="lazy pp-author"
                             src={seller.authorImage}
@@ -91,7 +114,10 @@ const TopSellers = () => {
                       </div>
 
                       <div className="author_list_info">
-                        <Link to="/author" state={{ author: seller }}>
+                        <Link
+                          to={`/author/${seller.authorId}`}
+                          state={{ author: seller }}
+                        >
                           {seller.authorName}
                         </Link>
 

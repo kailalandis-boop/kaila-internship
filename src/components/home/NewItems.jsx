@@ -144,7 +144,7 @@ const NewItems = () => {
                 {/* Creator Image */}
                 <div className="author_list_pp">
                   <Link
-                    to="/author"
+                    to={`/author/${item.authorId}`}
                     state={{
                       author: {
                         authorId: item.authorId,
@@ -191,7 +191,7 @@ const NewItems = () => {
                     </div>
                   </div>
 
-                  <Link to="/item-details" state={{ item: item}}>
+                  <Link to={`/item-details/${item.nftId}`} state={{ item: item}}>
                     <img
                       src={item.nftImage || nftImage}
                       className="nft__item_preview"
@@ -200,11 +200,16 @@ const NewItems = () => {
                     />
                   </Link>
                 </div>
-
                 {/* NFT Information */}
                 <div className="nft__item_info">
-                  <Link to="/item-details" state={{ item: item }}>
+                  <Link to={`/item-details/${item.nftId}`} state={{ item }}>
                     <h4>{item.title || "Untitled NFT"}</h4>
+                  </Link>
+
+                  <Link to={`/collection/${item.nftId}`}>
+                    <p className="collection-name">
+                      {item.collectionName}
+                    </p>
                   </Link>
 
                   <div className="nft__item_price">
@@ -216,7 +221,6 @@ const NewItems = () => {
                     <span>{item.likes ?? 0}</span>
                   </div>
                 </div>
-
               </div>
             </div>
           ))}

@@ -14241,8 +14241,13 @@ a.read_more i {
   -webkit-border-radius: 100%;
 }
 
+
+/* AUTHOR PROFILE */
+
 .profile_name {
   margin-left: 20px;
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .rtl .profile_name {
@@ -14253,6 +14258,108 @@ a.read_more i {
 .profile_name h4 {
   font-size: 24px;
   line-height: 1.3em;
+  min-width: 0;
+  width: 100%;
+}
+
+/* AUTHOR ADDRESS */
+
+.profile_address {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  margin-top: 5px;
+  width: 350px;
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.profile_address_text {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.profile_copy_button {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background-color: var(--secondary-color);
+  color: #ffffff !important;
+  font-family: FontAwesome !important;
+  font-size: 12px !important;
+  line-height: 1;
+  cursor: pointer;
+  text-align: center;
+  position: relative
+}
+
+.profile_copy_button::before {
+  font-family: FontAwesome;
+}
+
+.profile_copy_button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  background: #222;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.profile_copy_button:hover::after,
+.profile_copy_button:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+.profile_copy_button:hover {
+  opacity: 0.8;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1080px) {
+  .profile_name {
+    width: 0;
+  }
+
+  .profile_address {
+    width: 100%;
+    max-width: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile_address {
+    width: 100%;
+  }
 }
 
 .profile_follower {
@@ -16837,4 +16944,56 @@ img {
   text-align: center;
   border: none;
   cursor: pointer;
+}
+
+/* Item Details page spacing */
+.item-details-page #section-hero {
+  padding-top: 120px !important;
+  padding-bottom: 80px !important;
+}
+
+.item-details-page .author_list_info,
+.item-details-page .author_list_info a {
+  color: #222222 !important;
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.explore-skeleton-card {
+  min-height: 0;
+  padding: 20px;
+  border: 2px solid #dedede;
+  border-radius: 24px;
+}
+
+/* Author image */
+.explore-skeleton-author {
+  margin-bottom: 25px;
+}
+
+/* NFT artwork */
+.explore-skeleton-artwork {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 25px;
+}
+
+/* Explore Items */
+
+.explore-skeleton-artwork .skeleton-box {
+  height: 100%;
+}
+
+/* NFT information */
+.explore-skeleton-info {
+  margin-top: 0;
+}
+
+/* Price and likes */
+.explore-skeleton-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
 }

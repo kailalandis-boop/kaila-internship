@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import AuthorBanner from "../images/author_banner.jpg";
 import AuthorItems from "../components/author/AuthorItems";
 import AuthorImage from "../images/author_thumbnail.jpg";
@@ -7,24 +7,33 @@ import axios from "axios";
 import Skeleton from "../components/UI/Skeleton";
 
 const Author = () => {
+  const { authorId } = useParams();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [authorId]);
+
+  const correctedAuthorId = authorId === "1" ? "83937449" : authorId;
   const location = useLocation();
   const author = location.state?.author;
-  const normalizedAuthor =
-  author?.authorId === 1
-    ? {
-        ...author,
-        authorId: 83937449,
-        authorName: "Monica Lucas",
-      }
-    : author;
 
-  const [authorInfo, setAuthorInfo] = useState(normalizedAuthor);
+  const normalizedAuthor =
+    author?.authorId === 1
+      ? {
+          ...author,
+          authorId: 83937449,
+          authorName: "Monica Lucas",
+        }
+      : author;
+
+  const [authorInfo, setAuthorInfo] = useState(normalizedAuthor || null);
 
   const [loading, setLoading] = useState(true);
   const [itemsLoading, setItemsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
 
   const isLoading = loading || itemsLoading;
+  const [copied, setCopied] = useState(false);
 
   const handleFollow = () => {
     if (isFollowing) {
@@ -46,19 +55,39 @@ const Author = () => {
     }
   };
 
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(authorInfo.address);
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Unable to copy address:", error);
+    }
+  };
+
   useEffect(() => {
-    async function fetchAuthor() {
+    let timer;
+    let isMounted = true;
+
+    const controller = new AbortController();
+
+    const fetchAuthor = async () => {
       try {
         setLoading(true);
 
-        console.log("Author ID being requested:", normalizedAuthor?.authorId);
+        console.log("Author ID being requested:", correctedAuthorId);
 
         const response = await axios.get(
           "https://us-central1-nft-cloud-functions.cloudfunctions.net/authors",
           {
             params: {
-              author: normalizedAuthor?.authorId,
+              author: correctedAuthorId,
             },
+            signal: controller.signal,
           }
         );
 
@@ -71,29 +100,36 @@ const Author = () => {
 
         console.log("Fetched author:", fetchedAuthor);
 
-        if (fetchedAuthor) {
-          setAuthorInfo({
-            ...normalizedAuthor,
-            ...fetchedAuthor,
-          });
+        if (isMounted && fetchedAuthor) {
+          setAuthorInfo(fetchedAuthor);
         }
       } catch (error) {
-        console.error("API error:", error);
-        console.error("Error response:", error.response?.data);
-        console.error("Status:", error.response?.status);
+        if (isMounted && !controller.signal.aborted) {
+          console.error("API error:", error);
+          console.error("Error response:", error.response?.data);
+          console.error("Status:", error.response?.status);
+        }
       } finally {
-        setTimeout(() => {
-          setLoading(false);
-        }, 1500);
+        if (isMounted) {
+          timer = setTimeout(() => {
+            setLoading(false);
+          }, 1500);
+        }
       }
-    }
+    };
 
-    if (normalizedAuthor?.authorId) {
+    if (correctedAuthorId) {
       fetchAuthor();
     } else {
       setLoading(false);
     }
-  }, [normalizedAuthor?.authorId]);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [correctedAuthorId]);
 
   return (
     <div id="wrapper">
@@ -132,18 +168,57 @@ const Author = () => {
                       <div className="profile_name">
                         <h4>
                           {isLoading ? (
-                            <Skeleton
-                              width="150px"
-                              height="22px"
-                              borderRadius="5px"
-                            />
+                            <>
+                              {/* Author name skeleton */}
+                              <Skeleton
+                                width="150px"
+                                height="22px"
+                                borderRadius="5px"
+                              />
+
+                              {/* Username skeleton */}
+                              <div style={{ marginTop: "5px" }}>
+                                <Skeleton
+                                  width="100px"
+                                  height="15px"
+                                  borderRadius="5px"
+                                />
+                              </div>
+
+                              {/* Address skeleton */}
+                              <div style={{ marginTop: "8px" }}>
+                                <Skeleton
+                                  width="250px"
+                                  height="12px"
+                                  borderRadius="5px"
+                                />
+                              </div>
+                            </>
                           ) : (
                             <>
+                              {/* Author name */}
                               {authorInfo?.authorName || "Author"}
 
+                              {/* Username */}
                               <span className="profile_username">
                                 {authorInfo?.tag ? `@${authorInfo.tag}` : ""}
                               </span>
+
+                              {/* Address and copy button */}
+                                {authorInfo?.address && (
+                                  <div className="profile_address">
+                                    <span className="profile_address_text">
+                                      {authorInfo.address}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="profile_copy_button fa fa-copy"
+                                      onClick={handleCopyAddress}
+                                      aria-label={copied ? "Copied!" : "Copy"}
+                                      data-tooltip={copied ? "Copied!" : "Copy"}
+                                    />
+                                  </div>
+                                )}
                             </>
                           )}
                         </h4>

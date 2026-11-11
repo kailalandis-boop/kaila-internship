@@ -120,7 +120,7 @@ const HotCollections = () => {
                         <div className="nft_coll">
                           <div className="nft_wrap">
                             <Link
-                              to="/item-details"
+                              to={`/item-details/${collection.nftId}`}
                               state={{ item: collection }}
                             >
                               <img
@@ -133,16 +133,16 @@ const HotCollections = () => {
 
                           <div className="nft_coll_pp">
                             <Link
-                              to="/author"
-                              state={{
-                                author: {
-                                  authorId: collection.authorId,
-                                  authorImage: collection.authorImage,
-                                  authorName:
-                                    collection.authorName || "Unknown author",
-                                },
-                              }}
-                            >
+                                to={`/author/${collection.authorId}`}
+                                state={{
+                                  author: {
+                                    authorId: collection.authorId,
+                                    authorImage: collection.authorImage,
+                                    authorName:
+                                      collection.authorName || "Unknown author",
+                                  },
+                                }}
+                              >
                               <img
                                 className="lazy pp-coll"
                                 src={collection.authorImage}
@@ -155,7 +155,7 @@ const HotCollections = () => {
 
                           <div className="nft_coll_info">
                             <Link
-                              to="/item-details"
+                              to={`/item-details/${collection.nftId}`} 
                               state={{ item: collection }}
                             >
                               <h4>{collection.title || "Untitled NFT"}</h4>

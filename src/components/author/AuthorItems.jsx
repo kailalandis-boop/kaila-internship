@@ -128,11 +128,13 @@ const AuthorItems = ({ author, onLoadingChange }) => {
               >
                 <div className="nft__item">
                   <div className="author_list_pp">
-                    <Link to="/author" state={{ author }}>
+                    <Link to={`/author/${author.authorId}`} state={{ author }}>
                       <img
                         className="lazy"
                         src={item.authorImage || AuthorImage}
                         alt={author.authorName || "Author"}
+                        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                        style={{ cursor: "pointer" }}
                       />
                       <i className="fa fa-check"></i>
                     </Link>
@@ -158,7 +160,7 @@ const AuthorItems = ({ author, onLoadingChange }) => {
                       </div>
                     </div>
 
-                    <Link to="/item-details" state={{ item }}>
+                    <Link to={`/item-details/${item.nftId}`} state={{ item }}>
                       <img
                         src={item.nftImage || nftImage}
                         className="lazy nft__item_preview"
@@ -168,7 +170,7 @@ const AuthorItems = ({ author, onLoadingChange }) => {
                   </div>
 
                   <div className="nft__item_info">
-                    <Link to="/item-details" state={{ item }}>
+                    <Link to={`/item-details/${item.nftId}`} state={{ item }}>
                       <h4>{item.title}</h4>
                     </Link>
 

@@ -12,37 +12,51 @@ const ExploreItems = () => {
   const [filter, setFilter] = useState("");
   const [visibleItems, setVisibleItems] = useState(8); 
   const loadMoreItems = () => {
-  setVisibleItems((prev) => prev + 4);
-};
+    setVisibleItems((prev) => prev + 4);
+  };
+  const sortedItems = [...items].sort((a, b) => {
+    if (filter === "price_low_to_high") {
+      return Number(a.price) - Number(b.price);
+    }
+
+    if (filter === "price_high_to_low") {
+      return Number(b.price) - Number(a.price);
+    }
+
+    if (filter === "likes_high_to_low") {
+      return Number(b.likes) - Number(a.likes);
+    }
+
+    return 0;
+  });
   
-  useEffect(() => { 
-    setVisibleItems(8); // Reset visible items when filter changes
-    const fetchItems = async () => { 
-      try { 
-        setLoading(true); 
-        setError(""); 
-        
-        const response = await axios.get( "https://us-central1-nft-cloud-functions.cloudfunctions.net/explore", 
-          { 
-            params: { 
-              filter: filter, 
-            }, 
-          } 
-        ); 
-        
-        setItems(response.data); 
-      } catch (error) { 
-        console.error("Error fetching Explore items:", error); 
-        setError("Unable to load NFTs."); 
-      } finally { 
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await axios.get(
+          "https://us-central1-nft-cloud-functions.cloudfunctions.net/explore"
+        );
+
+        setItems(response.data);
+      } catch (error) {
+        console.error("Error fetching Explore items:", error);
+        setError("Unable to load NFTs.");
+      } finally {
         setTimeout(() => {
-          setLoading(false); 
+          setLoading(false);
         }, 1500);
-      } 
-    }; 
-    
-    fetchItems(); 
-  }, [filter]); 
+      }
+    };
+
+    fetchItems();
+  }, []);
+
+  useEffect(() => {
+    setVisibleItems(8);
+  }, [filter]);
   
   return ( 
     <> 
@@ -60,40 +74,65 @@ const ExploreItems = () => {
       </div>
       
       <div className="row"> 
-        {loading ? ( 
-          Array.from({ length: 8 }).map((_, index) => ( 
-            <div 
-              className="col-lg-3 col-md-6 col-sm-6 col-xs-12" 
-              key={index} 
-            > 
-              <div className="nft__item skeleton-card"> 
-                <Skeleton 
-                  width="100%" 
-                  height="200px" 
-                  borderRadius="8px" 
-                /> 
-                <Skeleton 
-                  width="45px" 
-                  height="45px" 
-                  borderRadius="50%" 
-                /> 
-                <Skeleton 
-                  width="70%" 
-                  height="20px" 
-                  borderRadius="5px" 
-                /> 
-                <Skeleton 
-                  width="40%" 
-                  height="15px" 
-                  borderRadius="5px" 
-                /> 
-              </div> 
-            </div> 
-          )) 
-        ) : error ? ( 
-          <p>{error}</p> 
-        ) : ( 
-          items.slice(0, visibleItems).map((item, index) => (
+        {loading ? (
+          Array.from({ length: 8 }).map((_, index) => (
+            <div
+              className="col-lg-3 col-md-6 col-sm-6 col-xs-12"
+              key={index}
+            >
+              <div className="nft__item explore-skeleton-card">
+
+                {/* Author image */}
+                <div className="explore-skeleton-author">
+                  <Skeleton
+                    width="100px"
+                    height="100px"
+                    borderRadius="50%"
+                  />
+                </div>
+
+                {/* NFT artwork */}
+                <div className="explore-skeleton-artwork">
+                  <Skeleton
+                    width="100%"
+                    height="100%"
+                    borderRadius="12px"
+                  />
+                </div>
+
+                {/* NFT information */}
+                <div className="explore-skeleton-info">
+
+                  {/* NFT title */}
+                  <Skeleton
+                    width="75%"
+                    height="28px"
+                    borderRadius="5px"
+                  />
+
+                  {/* Price and likes */}
+                  <div className="explore-skeleton-bottom">
+                    <Skeleton
+                      width="90px"
+                      height="25px"
+                      borderRadius="5px"
+                    />
+
+                    <Skeleton
+                      width="65px"
+                      height="25px"
+                      borderRadius="5px"
+                    />
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          ))
+        ) : error ? (
+          <p>{error}</p>
+        ) : (
+          sortedItems.slice(0, visibleItems).map((item, index) => (
             <div 
               key={item.id || index} 
               className="d-item col-lg-3 col-md-6 col-sm-6 col-xs-12" 
@@ -104,18 +143,19 @@ const ExploreItems = () => {
             > 
               <div className="nft__item"> 
                 <div className="author_list_pp"> 
-                  <Link 
-                    to="/author" 
-                    state={{ 
-                      author: { 
-                        authorId: item.authorId, 
-                        authorImage: item.authorImage, 
-                        authorName: item.authorName, 
-                      }, 
-                    }} 
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="top" 
-                  > 
+                  <Link
+                    to={`/author/${item.authorId === 1 ? 83937449 : item.authorId}`}
+                    state={{
+                      author: {
+                        authorId: item.authorId === 1 ? 83937449 : item.authorId,
+                        authorImage: item.authorImage,
+                        authorName:
+                          item.authorId === 1 ? "Monica Lucas" : item.authorName,
+                      },
+                    }}
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                  >
                   <img 
                     className="lazy" 
                     src={item.authorImage || AuthorImage} 
@@ -151,7 +191,7 @@ const ExploreItems = () => {
                       </div> 
                     </div> 
                   </div> 
-                  <Link to="/item-details" state={{ item }}> 
+                  <Link to={`/item-details/${item.nftId}`} state={{ item }}>
                     <img 
                       src={item.nftImage || nftImage} 
                       className="lazy nft__item_preview" 
@@ -161,7 +201,7 @@ const ExploreItems = () => {
                 </div> 
                 
                 <div className="nft__item_info"> 
-                  <Link to="/item-details" state={{ item }}> 
+                  <Link to={`/item-details/${item.nftId}`} state={{ item }}> 
                     <h4>{item.title || "Untitled NFT"}</h4> 
                   </Link> 
                   
@@ -178,7 +218,7 @@ const ExploreItems = () => {
           )) 
         )} 
       </div> 
-      {!loading && !error && visibleItems < items.length && (
+      {!loading && !error && visibleItems < sortedItems.length && (
         <div className="col-md-12 text-center">
           <button
             id="loadmore"
