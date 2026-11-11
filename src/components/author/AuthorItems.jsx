@@ -54,7 +54,15 @@ const AuthorItems = ({ author, onLoadingChange }) => {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [author?.authorId, author?.nftCollection]);
+
+  }, [
+    author?.authorId,
+    author?.nftCollection,
+    author?.authorName,
+    author?.authorImage,
+    author?.tag,
+    onLoadingChange,
+  ]);
 
   return (
     <div className="de_tab_content">
@@ -147,15 +155,15 @@ const AuthorItems = ({ author, onLoadingChange }) => {
 
                         <div className="nft__item_share">
                           <h4>Share</h4>
-                          <a href="" target="_blank" rel="noreferrer">
+                          <span target="_blank" rel="noreferrer">
                             <i className="fa fa-facebook fa-lg"></i>
-                          </a>
-                          <a href="" target="_blank" rel="noreferrer">
+                          </span>
+                          <span target="_blank" rel="noreferrer">
                             <i className="fa fa-twitter fa-lg"></i>
-                          </a>
-                          <a href="">
+                          </span>
+                          <span>
                             <i className="fa fa-envelope fa-lg"></i>
-                          </a>
+                          </span>
                         </div>
                       </div>
                     </div>
