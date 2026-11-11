@@ -6,10 +6,22 @@ import "owl.carousel/dist/assets/owl.carousel.css";
 import "owl.carousel/dist/assets/owl.theme.default.css";
 import "../../css/styles/style.css";
 import Skeleton from "../UI/Skeleton";
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 const HotCollections = () => {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AOS.init({
+      offset: 150,
+      duration: 800,
+      easing: "ease-in-sine",
+      once: true,
+      mirror: false,
+    });
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -66,14 +78,14 @@ const HotCollections = () => {
     <section id="section-collections" className="no-bottom">
       <div className="container">
         <div className="row">
-          <div className="col-lg-12">
+          <div className="col-lg-12" data-aos="fade-up">
             <div className="text-center">
               <h2>Hot Collections</h2>
               <div className="small-border bg-color-2"></div>
             </div>
           </div>
 
-          <div className="col-lg-12">
+          <div className="col-lg-12" data-aos="fade-up" data-aos-delay="150">
             <OwlCarousel
               className="owl-theme"
               {...options}
